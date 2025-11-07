@@ -20,6 +20,9 @@ namespace Dal.Repositories
 
         public async Task<int> CreateAsync(CvDto dto, CancellationToken cancellationToken = default)
         {
+            if (_connection.State != System.Data.ConnectionState.Open)
+                _connection.Open();
+
             const string sql = @"
                 INSERT INTO cv (jobseekerid, filelink, description)
                 VALUES (@JobSeekerId, @FileLink, @Description)
@@ -37,6 +40,9 @@ namespace Dal.Repositories
 
         public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
+            if (_connection.State != System.Data.ConnectionState.Open)
+                _connection.Open();
+
             const string sql = "DELETE FROM cv WHERE id = @Id;";
 
             var cmd = new CommandDefinition(
@@ -51,7 +57,10 @@ namespace Dal.Repositories
 
         public async Task<IEnumerable<CvDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            const string sql = "SELECT * FROM cv;";
+            if (_connection.State != System.Data.ConnectionState.Open)
+                _connection.Open();
+
+            const string sql = "SELECT id, jobseekerid as JobSeekerId, filelink as FileLink, description as Description FROM cv;";
 
             var cmd = new CommandDefinition(
                 sql,
@@ -64,7 +73,10 @@ namespace Dal.Repositories
 
         public async Task<CvDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            const string sql = "SELECT * FROM cv WHERE id = @Id;";
+            if (_connection.State != System.Data.ConnectionState.Open)
+                _connection.Open();
+
+            const string sql = "SELECT id, jobseekerid as JobSeekerId, filelink as FileLink, description as Description FROM cv WHERE id = @Id;";
 
             var cmd = new CommandDefinition(
                 sql,
@@ -78,7 +90,10 @@ namespace Dal.Repositories
 
         public async Task<IEnumerable<CvDto>> GetByJobSeekerIdAsync(int jobSeekerId, CancellationToken cancellationToken = default)
         {
-            const string sql = "SELECT * FROM cv WHERE jobseekerid = @JobSeekerId;";
+            if (_connection.State != System.Data.ConnectionState.Open)
+                _connection.Open();
+
+            const string sql = "SELECT id, jobseekerid as JobSeekerId, filelink as FileLink, description as Description FROM cv WHERE jobseekerid = @JobSeekerId;";
 
             var cmd = new CommandDefinition(
                 sql,
@@ -92,6 +107,9 @@ namespace Dal.Repositories
 
         public async Task UpdateAsync(CvDto dto, CancellationToken cancellationToken = default)
         {
+            if (_connection.State != System.Data.ConnectionState.Open)
+                _connection.Open();
+
             const string sql = @"
                 UPDATE cv
                 SET filelink = @FileLink,
