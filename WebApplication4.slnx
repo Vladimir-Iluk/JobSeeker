@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Bll/Bll.csproj" />
+  <Project Path="Dal/Dal.csproj" />
+  <Project Path="WebApplication4/WebApplication4.csproj" />
+</Solution>
