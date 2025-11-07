@@ -30,7 +30,7 @@ namespace Dal.Repositories
         {
             await EnsureOpenAsync();
 
-            const string sql = "SELECT id, fullname, email, phone, experience, skills FROM jobseekers WHERE id = @id";
+            const string sql = "SELECT id, fullname, email, phone, experience, skills FROM jobseeker WHERE id = @id";
 
             using var command = new NpgsqlCommand(sql, _connection);
             if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
@@ -57,7 +57,7 @@ namespace Dal.Repositories
             await EnsureOpenAsync();
             var result = new List<JobSeekerDto>();
 
-            const string sql = "SELECT id, fullname, email, phone, experience, skills FROM jobseekers";
+            const string sql = "SELECT id, fullname, email, phone, experience, skills FROM jobseeker";
 
             using var command = new NpgsqlCommand(sql, _connection);
             if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
@@ -85,7 +85,7 @@ namespace Dal.Repositories
             await EnsureOpenAsync();
 
             const string sql = @"
-                INSERT INTO jobseekers (fullname, email, phone, experience, skills)
+                INSERT INTO jobseeker (fullname, email, phone, experience, skills)
                 VALUES (@fullname, @email, @phone, @experience, @skills)
                 RETURNING id;";
 
@@ -98,8 +98,11 @@ namespace Dal.Repositories
             command.Parameters.AddWithValue("@experience", (object?)dto.Experience ?? DBNull.Value);
             command.Parameters.AddWithValue("@skills", (object?)dto.Skills ?? DBNull.Value);
 
-            var id = (int)await command.ExecuteScalarAsync(cancellationToken);
-            return id;
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            if (result == null)
+                throw new InvalidOperationException("Failed to create JobSeeker: no ID returned.");
+            
+            return Convert.ToInt32(result);
         }
 
         public async Task UpdateAsync(JobSeekerDto dto, CancellationToken cancellationToken = default)
@@ -107,7 +110,7 @@ namespace Dal.Repositories
             await EnsureOpenAsync();
 
             const string sql = @"
-                UPDATE jobseekers
+                UPDATE jobseeker
                 SET fullname = @fullname, email = @email, phone = @phone, experience = @experience, skills = @skills
                 WHERE id = @id;";
 
@@ -128,7 +131,7 @@ namespace Dal.Repositories
         {
             await EnsureOpenAsync();
 
-            const string sql = "DELETE FROM jobseekers WHERE id = @id";
+            const string sql = "DELETE FROM jobseeker WHERE id = @id";
 
             using var command = new NpgsqlCommand(sql, _connection);
             if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
@@ -142,7 +145,7 @@ namespace Dal.Repositories
             await EnsureOpenAsync();
             var result = new List<JobSeekerDto>();
 
-            const string sql = @"SELECT id, fullname, email, phone, experience, skills FROM jobseekers WHERE fullname ILIKE @q OR skills ILIKE @q";
+            const string sql = @"SELECT id, fullname, email, phone, experience, skills FROM jobseeker WHERE fullname ILIKE @q OR skills ILIKE @q";
 
             using var command = new NpgsqlCommand(sql, _connection);
             if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;

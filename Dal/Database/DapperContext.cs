@@ -9,7 +9,7 @@ namespace Dal.Database
     public class DapperContext
     {
         private readonly IConfiguration _configuration;
-        private readonly string _connectionString;
+        private readonly string? _connectionString;
 
         public DapperContext(IConfiguration configuration)
         {
@@ -18,7 +18,12 @@ namespace Dal.Database
         }
 
         public IDbConnection CreateConnection()
-            => new NpgsqlConnection(_connectionString);
+        {
+            if (string.IsNullOrEmpty(_connectionString))
+                throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+            
+            return new NpgsqlConnection(_connectionString);
+        }
 
         
     }
