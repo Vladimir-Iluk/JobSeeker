@@ -8,9 +8,10 @@ using System.Threading.Tasks;
 
 namespace Dal.Repositories
 {
-    public class EducationRepository : IEducationRepository
+    public class EducationRepository : IEducationRepository, ITransactionalRepository
     {
         private readonly IDbConnection _connection;
+        public IDbTransaction? Transaction { get; set; }
 
         public EducationRepository(IDbConnection connection)
         {
@@ -24,36 +25,40 @@ namespace Dal.Repositories
                 VALUES (@JobSeekerId, @Institution, @Degree, @Year)
                 RETURNING id;";
 
-            var command = new CommandDefinition(sql, dto, cancellationToken: cancellationToken);
-            return await _connection.ExecuteScalarAsync<int>(command);
+            var cmd = new CommandDefinition(sql, dto, Transaction, cancellationToken: cancellationToken);
+            return await _connection.ExecuteScalarAsync<int>(cmd);
         }
 
         public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
             const string sql = "DELETE FROM education WHERE id = @Id;";
-            var command = new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken);
-            await _connection.ExecuteAsync(command);
+
+            var cmd = new CommandDefinition(sql, new { Id = id }, Transaction, cancellationToken: cancellationToken);
+            await _connection.ExecuteAsync(cmd);
         }
 
         public async Task<IEnumerable<EducationDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             const string sql = "SELECT * FROM education;";
-            var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
-            return await _connection.QueryAsync<EducationDto>(command);
+
+            var cmd = new CommandDefinition(sql, transaction: Transaction, cancellationToken: cancellationToken);
+            return await _connection.QueryAsync<EducationDto>(cmd);
         }
 
         public async Task<EducationDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             const string sql = "SELECT * FROM education WHERE id = @Id;";
-            var command = new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken);
-            return await _connection.QueryFirstOrDefaultAsync<EducationDto>(command);
+
+            var cmd = new CommandDefinition(sql, new { Id = id }, Transaction, cancellationToken: cancellationToken);
+            return await _connection.QueryFirstOrDefaultAsync<EducationDto>(cmd);
         }
 
         public async Task<IEnumerable<EducationDto>> GetByJobSeekerIdAsync(int jobSeekerId, CancellationToken cancellationToken = default)
         {
             const string sql = "SELECT * FROM education WHERE jobseekerid = @JobSeekerId;";
-            var command = new CommandDefinition(sql, new { JobSeekerId = jobSeekerId }, cancellationToken: cancellationToken);
-            return await _connection.QueryAsync<EducationDto>(command);
+
+            var cmd = new CommandDefinition(sql, new { JobSeekerId = jobSeekerId }, Transaction, cancellationToken: cancellationToken);
+            return await _connection.QueryAsync<EducationDto>(cmd);
         }
 
         public async Task UpdateAsync(EducationDto dto, CancellationToken cancellationToken = default)
@@ -65,8 +70,8 @@ namespace Dal.Repositories
                     year = @Year
                 WHERE id = @Id;";
 
-            var command = new CommandDefinition(sql, dto, cancellationToken: cancellationToken);
-            await _connection.ExecuteAsync(command);
+            var cmd = new CommandDefinition(sql, dto, Transaction, cancellationToken: cancellationToken);
+            await _connection.ExecuteAsync(cmd);
         }
     }
 }

@@ -8,9 +8,10 @@ using System.Threading.Tasks;
 
 namespace Dal.Repositories
 {
-    public class ExperienceRecordRepository : IExperienceRecordRepository
+    public class ExperienceRecordRepository : IExperienceRecordRepository, ITransactionalRepository
     {
         private readonly IDbConnection _connection;
+        public IDbTransaction? Transaction { get; set; }
 
         public ExperienceRecordRepository(IDbConnection connection)
         {
@@ -24,36 +25,40 @@ namespace Dal.Repositories
                 VALUES (@JobSeekerId, @CompanyName, @Position, @Years)
                 RETURNING id;";
 
-            var command = new CommandDefinition(sql, dto, cancellationToken: cancellationToken);
-            return await _connection.ExecuteScalarAsync<int>(command);
+            var cmd = new CommandDefinition(sql, dto, Transaction, cancellationToken: cancellationToken);
+            return await _connection.ExecuteScalarAsync<int>(cmd);
         }
 
         public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
         {
             const string sql = "DELETE FROM experiencerecord WHERE id = @Id;";
-            var command = new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken);
-            await _connection.ExecuteAsync(command);
+
+            var cmd = new CommandDefinition(sql, new { Id = id }, Transaction, cancellationToken: cancellationToken);
+            await _connection.ExecuteAsync(cmd);
         }
 
         public async Task<IEnumerable<ExperienceRecordDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             const string sql = "SELECT * FROM experiencerecord;";
-            var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
-            return await _connection.QueryAsync<ExperienceRecordDto>(command);
+
+            var cmd = new CommandDefinition(sql, transaction: Transaction, cancellationToken: cancellationToken);
+            return await _connection.QueryAsync<ExperienceRecordDto>(cmd);
         }
 
         public async Task<ExperienceRecordDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             const string sql = "SELECT * FROM experiencerecord WHERE id = @Id;";
-            var command = new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken);
-            return await _connection.QueryFirstOrDefaultAsync<ExperienceRecordDto>(command);
+
+            var cmd = new CommandDefinition(sql, new { Id = id }, Transaction, cancellationToken: cancellationToken);
+            return await _connection.QueryFirstOrDefaultAsync<ExperienceRecordDto>(cmd);
         }
 
         public async Task<IEnumerable<ExperienceRecordDto>> GetByJobSeekerIdAsync(int jobSeekerId, CancellationToken cancellationToken = default)
         {
             const string sql = "SELECT * FROM experiencerecord WHERE jobseekerid = @JobSeekerId;";
-            var command = new CommandDefinition(sql, new { JobSeekerId = jobSeekerId }, cancellationToken: cancellationToken);
-            return await _connection.QueryAsync<ExperienceRecordDto>(command);
+
+            var cmd = new CommandDefinition(sql, new { JobSeekerId = jobSeekerId }, Transaction, cancellationToken: cancellationToken);
+            return await _connection.QueryAsync<ExperienceRecordDto>(cmd);
         }
 
         public async Task UpdateAsync(ExperienceRecordDto dto, CancellationToken cancellationToken = default)
@@ -65,8 +70,8 @@ namespace Dal.Repositories
                     years = @Years
                 WHERE id = @Id;";
 
-            var command = new CommandDefinition(sql, dto, cancellationToken: cancellationToken);
-            await _connection.ExecuteAsync(command);
+            var cmd = new CommandDefinition(sql, dto, Transaction, cancellationToken: cancellationToken);
+            await _connection.ExecuteAsync(cmd);
         }
     }
 }

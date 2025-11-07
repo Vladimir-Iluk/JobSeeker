@@ -1,4 +1,5 @@
-﻿using Dal.Dto;
+﻿// Dal/Repositories/JobSeekerRepositoryAdo.cs
+using Dal.Dto;
 using Dal.Interfaces;
 using Npgsql;
 using System;
@@ -9,9 +10,10 @@ using System.Threading.Tasks;
 
 namespace Dal.Repositories
 {
-    public class JobSeekerRepositoryAdo : IJobSeekerRepository
+    public class JobSeekerRepositoryAdo : IJobSeekerRepository, ITransactionalRepository
     {
         private readonly NpgsqlConnection _connection;
+        public IDbTransaction? Transaction { get; set; }
 
         public JobSeekerRepositoryAdo(NpgsqlConnection connection)
         {
@@ -28,9 +30,10 @@ namespace Dal.Repositories
         {
             await EnsureOpenAsync();
 
-            const string sql = "SELECT * FROM jobseekers WHERE id = @id";
+            const string sql = "SELECT id, fullname, email, phone, experience, skills FROM jobseekers WHERE id = @id";
 
             using var command = new NpgsqlCommand(sql, _connection);
+            if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
             command.Parameters.AddWithValue("@id", id);
 
             using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -48,14 +51,17 @@ namespace Dal.Repositories
             };
         }
 
+        // аналогічно в інших методах — встановити command.Transaction = (NpgsqlTransaction)Transaction якщо Transaction != null
         public async Task<IEnumerable<JobSeekerDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             await EnsureOpenAsync();
             var result = new List<JobSeekerDto>();
 
-            const string sql = "SELECT * FROM jobseekers";
+            const string sql = "SELECT id, fullname, email, phone, experience, skills FROM jobseekers";
 
             using var command = new NpgsqlCommand(sql, _connection);
+            if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
+
             using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
             while (await reader.ReadAsync(cancellationToken))
@@ -84,6 +90,7 @@ namespace Dal.Repositories
                 RETURNING id;";
 
             using var command = new NpgsqlCommand(sql, _connection);
+            if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
 
             command.Parameters.AddWithValue("@fullname", dto.FullName);
             command.Parameters.AddWithValue("@email", dto.Email);
@@ -105,6 +112,7 @@ namespace Dal.Repositories
                 WHERE id = @id;";
 
             using var command = new NpgsqlCommand(sql, _connection);
+            if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
 
             command.Parameters.AddWithValue("@id", dto.Id);
             command.Parameters.AddWithValue("@fullname", dto.FullName);
@@ -123,6 +131,7 @@ namespace Dal.Repositories
             const string sql = "DELETE FROM jobseekers WHERE id = @id";
 
             using var command = new NpgsqlCommand(sql, _connection);
+            if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
             command.Parameters.AddWithValue("@id", id);
 
             await command.ExecuteNonQueryAsync(cancellationToken);
@@ -133,9 +142,10 @@ namespace Dal.Repositories
             await EnsureOpenAsync();
             var result = new List<JobSeekerDto>();
 
-            const string sql = @"SELECT * FROM jobseekers WHERE fullname ILIKE @q OR skills ILIKE @q";
+            const string sql = @"SELECT id, fullname, email, phone, experience, skills FROM jobseekers WHERE fullname ILIKE @q OR skills ILIKE @q";
 
             using var command = new NpgsqlCommand(sql, _connection);
+            if (Transaction is NpgsqlTransaction npgTx) command.Transaction = npgTx;
             command.Parameters.AddWithValue("@q", $"%{query}%");
 
             using var reader = await command.ExecuteReaderAsync(cancellationToken);

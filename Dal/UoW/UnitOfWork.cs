@@ -1,16 +1,12 @@
-﻿using Dal.Database;
+﻿
+using Dal.Database;
 using Dal.Interfaces;
 using Dal.Repositories;
 using Npgsql;
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
-using Dal.Interfaces;
-using Npgsql;
 using System.Data;
 using System.Threading.Tasks;
-using Dal.Repositories;
+
 namespace Dal.UoW
 {
     public class UnitOfWork : IUnitOfWork
@@ -28,7 +24,6 @@ namespace Dal.UoW
             _connection = context.CreateConnection() as NpgsqlConnection
                 ?? throw new InvalidOperationException("Не вдалося створити підключення PostgreSQL.");
 
-            // Репозиторії з reuse одного з’єднання
             JobSeekers = new JobSeekerRepositoryAdo(_connection);
             Educations = new EducationRepository(_connection);
             ExperienceRecords = new ExperienceRecordRepository(_connection);
@@ -41,18 +36,43 @@ namespace Dal.UoW
                 await _connection.OpenAsync();
 
             _transaction = await _connection.BeginTransactionAsync();
+            PropagateTransactionToRepositories(_transaction);
+        }
+
+        private void PropagateTransactionToRepositories(IDbTransaction? tx)
+        {
+            void TrySet(object repo)
+            {
+                if (repo is ITransactionalRepository t)
+                    t.Transaction = tx;
+            }
+
+            TrySet(JobSeekers);
+            TrySet(Educations);
+            TrySet(ExperienceRecords);
+            TrySet(CVs);
         }
 
         public async Task CommitAsync()
         {
             if (_transaction != null)
+            {
                 await _transaction.CommitAsync();
+                _transaction.Dispose();
+                _transaction = null;
+                PropagateTransactionToRepositories(null);
+            }
         }
 
         public async Task RollbackAsync()
         {
             if (_transaction != null)
+            {
                 await _transaction.RollbackAsync();
+                _transaction.Dispose();
+                _transaction = null;
+                PropagateTransactionToRepositories(null);
+            }
         }
 
         public void Dispose()
